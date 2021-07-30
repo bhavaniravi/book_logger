@@ -2,7 +2,7 @@ from application.app import app
 from flask import request
 # Import your models here
 from application.models import Book, save_objects, db, User, BookReviews
-from application.services import BookService, AuthorService
+from application.services import BookService, AuthorService, PublisherService
 import traceback
 
 @app.route("/book", methods=["GET"])
@@ -23,10 +23,17 @@ def add_books():
     try:
         if params["book_name"] == "":
             raise Exception
-        author = AuthorService.get_author_by_name(params["author_name"])
+        author = AuthorService.get_by_name(params["author_name"])
         if not author:
             author = AuthorService.create(author_name=params["author_name"])
-        book = BookService.create(book_name=params["book_name"], authors=[author], publisher=params["publisher"],)
+
+
+        publisher = PublisherService.get_by_name(params["publisher"])
+        print (publisher)
+        if not publisher:
+            publisher = PublisherService.create(params["publisher"])
+
+        book = BookService.create(book_name=params["book_name"], authors=[author], publisher=publisher)
         return {"results": {"id": book.id, "book_name": book.book_name}}, 201
     except Exception as e:
         print (e)
