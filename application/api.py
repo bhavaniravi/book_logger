@@ -12,7 +12,7 @@ def get_books():
     for book in books:
         results.append({
             "id": book.id,
-            "book_name": book.name
+            "book_name": book.book_name
         })
     return {"results": results}
 
@@ -36,8 +36,9 @@ def add_books():
         book = BookService.create(book_name=params["book_name"], authors=[author], publisher=publisher)
         return {"results": {"id": book.id, "book_name": book.book_name}}, 201
     except Exception as e:
-        print (e)
-        return {"status": "error", "error_message": "Data in wrong format", "error_traceback": traceback.format_exc()}, 400
+        exception_string = traceback.format_exc()
+        print (exception_string)
+        return {"status": "error", "error_message": "Data in wrong format", "error_traceback": exception_string}, 400
     
 
 @app.route("/book/<id>", methods=["GET"])
