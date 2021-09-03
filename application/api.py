@@ -5,7 +5,43 @@ from application.models import Book, save_objects, db, User, BookReviews
 from application.services import BookService, AuthorService, PublisherService
 import traceback
 
+from flask_jwt import jwt_required, JWT, current_identity
+
+def identity(payload):
+    user_id = payload['identity']
+    return User.query.filter_by(id=user_id).first()
+
+def authenticate(username, password):
+    user = User.query.filter_by(username=username).first()
+    if user and user.password == password:
+        return user
+
+jwt = JWT(app, authenticate, identity)
+
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.json
+    try:
+        # Get or create user
+        try:
+            user = User(username=data['username'], password=data['password'])
+            db.session.add(user)
+            db.session.commit()
+        except:
+            db.session.rollback()
+            user = User.query.filter_by(username=data['username']).first()
+        
+        access_token = jwt.jwt_encode_callback(user)
+        return {"token": access_token.decode('utf-8')}
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+        return "Could not register user"
+
+
+
 @app.route("/book", methods=["GET"])
+@jwt_required()
 def get_books():
     books = Book.query.all()
     results = []
@@ -77,3 +113,12 @@ def get_all_reviews(id):
     book_reviews = BookReviews.query.filter_by(book_id=id).all()
     return {"results": [{"review_id": review.review_id, "review_text": review.review_text} for review in book_reviews]}
 
+
+@app.route("/book/<id>", methods=["DELETE"])
+def delete_book(id):
+    book = Book.query.filter_by(id=id).first()
+    if not book:
+        return {"status": "error", "error_message": "Invalid book id"}, 400
+    db.session.delete(book)
+    db.session.commit()
+    return {"status": "success", "message": "Book deleted"}
