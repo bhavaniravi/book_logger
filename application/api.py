@@ -79,13 +79,18 @@ def add_books():
 
 @app.route("/book/<id>", methods=["GET"])
 def get_book(id):
-    book = Book.query.filter_by(id=id).first()
-    return {
-        "id": book.id,
-        "name": book.book_name,
-        "authors":  [author.name for author in book.authors]
-    }
-
+    book = Book.query.get(id)
+    try: 
+        return {
+            "id": book.id,
+            "name": book.book_name,
+            "authors":  [author.name for author in book.authors]
+        }
+    except AttributeError:
+        return {"status": "error", "error_message": "Book with id {} does not exist".format(id)}, 401
+    except Exception:
+        return {"status": "error", "error_message": "Server not working"}, 500
+        
 @app.route("/book/<id>/review", methods=["POST"])
 def add_book_review(id):
     params = request.json
